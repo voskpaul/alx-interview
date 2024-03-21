@@ -1,4 +1,3 @@
-
 #!/usr/bin/python3
 '''Interview Q2- Coding challeng: The minimum operations
 '''
