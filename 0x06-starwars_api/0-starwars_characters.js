@@ -1,55 +1,50 @@
-
 #!/usr/bin/node
 
 const request = require('request');
 
-const movieId = process.argv[2];
-const filmEndPoint = 'https://swapi-api.hbtn.io/api/films/' + movieId;
-let people = [];
-const names = [];
+// Get the movie ID from command line arguments
+const movieID = process.argv[2];
+if (!movieID) {
+    console.log('Please provide a movie ID as the first argument.');
+    process.exit(1);
+}
 
-const requestCharacters = async () => {
-  await new Promise(resolve => request(filmEndPoint, (err, res, body) => {
-    if (err || res.statusCode !== 200) {
-      console.error('Error: ', err, '| StatusCode: ', res.statusCode);
-    } else {
-      const jsonBody = JSON.parse(body);
-      people = jsonBody.characters;
-      resolve();
+// Define the Star Wars API endpoint for the specified movie ID
+const apiEndpoint = `https://swapi.dev/api/films/${movieID}/`;
+
+// Make a request to the API endpoint
+request(apiEndpoint, (error, response, body) => {
+    if (error) {
+        console.error('Error fetching data from the API:', error);
+        return;
     }
-  }));
-};
 
-const requestNames = async () => {
-  if (people.length > 0) {
-    for (const p of people) {
-      await new Promise(resolve => request(p, (err, res, body) => {
-        if (err || res.statusCode !== 200) {
-          console.error('Error: ', err, '| StatusCode: ', res.statusCode);
-        } else {
-          const jsonBody = JSON.parse(body);
-          names.push(jsonBody.name);
-          resolve();
-        }
-      }));
+    // Parse the JSON response
+    const data = JSON.parse(body);
+
+    // Check if the API returned an error
+    if (!data || data.detail === 'Not found') {
+        console.log('Movie not found.');
+        return;
     }
-  } else {
-    console.error('Error: Got no Characters for some reason');
-  }
-};
 
-const getCharNames = async () => {
-  await requestCharacters();
-  await requestNames();
+    // Get the list of character URLs
+    const characters = data.characters;
 
-  for (const n of names) {
-    if (n === names[names.length - 1]) {
-      process.stdout.write(n);
-    } else {
-      process.stdout.write(n + '\n');
-    }
-  }
-};
+    // Fetch and print each character's name in order
+    characters.forEach((characterURL) => {
+        request(characterURL, (error, response, body) => {
+            if (error) {
+                console.error('Error fetching character data:', error);
+                return;
+            }
 
-getCharNames();
+            // Parse the JSON response
+            const characterData = JSON.parse(body);
+
+            // Print the character's name
+            console.log(characterData.name);
+        });
+    });
+});
 
